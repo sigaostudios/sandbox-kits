@@ -1,0 +1,3 @@
+#!/bin/sh
+export AZURE_BICEP_USE_BINARY_FROM_PATH=true
+exec /opt/az/bin/python3 -m azure.cli "$@"

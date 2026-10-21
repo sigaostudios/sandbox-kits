@@ -1,0 +1,59 @@
+# syntax=docker/sandbox-kit:3.0.0-m.8@sha256:e6a397771e865625047cf84256a914c7974b3e749d858259b5bc9c653ddb6f0d
+schemaVersion: '3'
+kind: mixin
+version: '2026.10.2'
+displayName: Microsoft Foundry
+description: The Foundry azd extension family includes microsoft.foundry and dataset, evaluations, finetune
+  and models.
+provides:
+- microsoft-foundry
+requires:
+- azd >= 1.27.1
+capabilities:
+- type: com.docker.sandbox/network-policy@1
+  config:
+    install:
+      allow:
+      - aka.ms
+      - github.com
+      - raw.githubusercontent.com
+      - release-assets.githubusercontent.com
+    runtime:
+      allow:
+      - mcp.ai.azure.com
+      - '*.services.ai.azure.com'
+      - ai.azure.com
+      - '*.openai.azure.com'
+- type: com.docker.sandbox/lifecycle@1
+  config:
+    install:
+    - user: '1000'
+      env:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - NO_PROXY
+      - http_proxy
+      - https_proxy
+      - no_proxy
+      - SSL_CERT_FILE
+      - SSL_CERT_DIR
+      - REQUESTS_CA_BUNDLE
+      - CURL_CA_BUNDLE
+      - NODE_EXTRA_CA_CERTS
+      - AZD_SKIP_UPDATE_CHECK
+      - AZURE_CONFIG_DIR
+      - AZD_CONFIG_DIR
+      command: |
+        set -eu
+        azd extension install microsoft.foundry azure.ai.dataset azure.ai.evaluations azure.ai.finetune azure.ai.models
+        installed=$(azd extension list --installed)
+        printf '%s\n' "$installed"
+        for id in microsoft.foundry azure.ai.agents azure.ai.connections azure.ai.inspector azure.ai.projects azure.ai.routines azure.ai.skills azure.ai.toolboxes azure.ai.dataset azure.ai.evaluations azure.ai.finetune azure.ai.models; do
+          printf '%s\n' "$installed" | awk -v id="$id" '$1 == id { found=1 } END { exit !found }'
+        done
+- type: com.docker.sandbox/agent-context@1
+  config:
+    content: |-
+      The Foundry azd extension family includes microsoft.foundry and dataset, evaluations, finetune and models.
+      Extensions follow the official registry at install time; azd >= 1.27.1 is required.
+      Foundry project/API, MCP and OpenAI-compatible Azure endpoints are permitted; credentials are project-owned.

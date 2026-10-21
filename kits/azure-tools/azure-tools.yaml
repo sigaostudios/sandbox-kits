@@ -1,0 +1,56 @@
+# syntax=docker/sandbox-kit:3.0.0-m.8@sha256:e6a397771e865625047cf84256a914c7974b3e749d858259b5bc9c653ddb6f0d
+schemaVersion: '3'
+kind: mixin
+displayName: Azure tools
+description: Azure CLI ${{ kit.args.azureVersion }}, azd ${{ kit.args.azdVersion }} and Bicep ${{ kit.args.bicepVersion
+  }} are packaged locally. Azure CLI uses the packaged Bicep.
+args:
+  azureVersion:
+    default: 2.90.0
+    pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+    buildArg: AZURE_VERSION
+  azdVersion:
+    default: 1.32.0
+    pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+    buildArg: AZD_VERSION
+  bicepVersion:
+    default: 0.44.1
+    pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+    buildArg: BICEP_VERSION
+provides:
+- azure-cli@${{ kit.args.azureVersion }}
+- azd@${{ kit.args.azdVersion }}
+- bicep@${{ kit.args.bicepVersion }}
+requires:
+- native-dependencies >= 2026.10.2
+capabilities:
+- type: com.docker.sandbox/network-policy@1
+  config:
+    runtime:
+      allow:
+      - login.microsoftonline.com
+      - management.azure.com
+      - graph.microsoft.com
+      - aka.ms
+      - learn.microsoft.com
+- type: com.docker.sandbox/lifecycle@1
+  config:
+    install:
+    - user: '0'
+      command: |
+        set -eu
+        . /etc/os-release
+        [ "$ID:$VERSION_ID:$(uname -m)" = debian:13:x86_64 ] || { echo 'This kit requires Debian 13 linux/amd64' >&2; exit 1; }
+        test -r /usr/share/sandbox-kits/native-dependencies.installed || { echo 'Select the matching common dependency mixin' >&2; exit 1; }
+        test -z "$(dpkg --audit)"
+        for tool in az azd bicep; do
+          ln -sfn "/opt/sandbox-kits/azure/bin/$tool" "/usr/local/bin/$tool"
+          [ "$(readlink -f "$(command -v "$tool")")" = "$(readlink -f "/opt/sandbox-kits/azure/bin/$tool")" ] || { echo "$tool is shadowed on PATH" >&2; exit 1; }
+        done
+- type: com.docker.sandbox/agent-context@1
+  config:
+    content: |-
+      Azure CLI ${{ kit.args.azureVersion }}, azd ${{ kit.args.azdVersion }} and Bicep ${{ kit.args.bicepVersion }} are packaged locally. Azure CLI uses the packaged Bicep.
+      Azure authentication/control-plane and Microsoft Learn access are permitted.
+      Private feeds, credentials and additional data-plane endpoints belong to the project environment.
+dockerfile: azure-tools.dockerfile
