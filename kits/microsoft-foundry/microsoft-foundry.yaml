@@ -1,10 +1,9 @@
 # syntax=docker/sandbox-kit:3.0.0-m.8@sha256:e6a397771e865625047cf84256a914c7974b3e749d858259b5bc9c653ddb6f0d
 schemaVersion: '3'
 kind: mixin
-version: '2026.10.2'
+version: '2026.10.21'
 displayName: Microsoft Foundry
-description: The Foundry azd extension family includes microsoft.foundry and dataset, evaluations, finetune
-  and models.
+description: Foundry network access and optional installation of the Foundry azd extension family.
 provides:
 - microsoft-foundry
 requires:
@@ -43,8 +42,20 @@ capabilities:
       - AZD_SKIP_UPDATE_CHECK
       - AZURE_CONFIG_DIR
       - AZD_CONFIG_DIR
+      - FOUNDRY_INSTALL_EXTENSIONS
       command: |
         set -eu
+        case "${FOUNDRY_INSTALL_EXTENSIONS:-true}" in
+          true) ;;
+          false)
+            printf '%s\n' 'Foundry extension installation disabled; the project owns extension versions.'
+            exit 0
+            ;;
+          *)
+            echo 'FOUNDRY_INSTALL_EXTENSIONS must be true or false' >&2
+            exit 1
+            ;;
+        esac
         azd extension install microsoft.foundry azure.ai.dataset azure.ai.evaluations azure.ai.finetune azure.ai.models
         installed=$(azd extension list --installed)
         printf '%s\n' "$installed"
@@ -54,6 +65,7 @@ capabilities:
 - type: com.docker.sandbox/agent-context@1
   config:
     content: |-
-      The Foundry azd extension family includes microsoft.foundry and dataset, evaluations, finetune and models.
-      Extensions follow the official registry at install time; azd >= 1.27.1 is required.
+      Foundry network access is permitted; azd >= 1.27.1 is required.
+      FOUNDRY_INSTALL_EXTENSIONS defaults to true: the Foundry extension family is installed from the official registry.
+      With FOUNDRY_INSTALL_EXTENSIONS=false, this kit installs no extensions; the project supplies its pinned extensions.
       Foundry project/API, MCP and OpenAI-compatible Azure endpoints are permitted; credentials are project-owned.
