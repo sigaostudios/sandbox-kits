@@ -1,9 +1,9 @@
 # syntax=docker/sandbox-kit:3.0.0-m.8@sha256:e6a397771e865625047cf84256a914c7974b3e749d858259b5bc9c653ddb6f0d
 schemaVersion: '3'
 kind: mixin
-version: 2026.10.9
-displayName: Codex common dependencies
-description: Build-time native dependencies for the pinned Docker codex workload;
+version: 2026.10.28
+displayName: Codex common setup
+description: Native dependencies and durable agent state for the pinned Docker codex workload;
   compose directly with that exact workload digest.
 provides:
 - native-dependencies@2026.10.2
@@ -16,4 +16,14 @@ args:
     enum:
     - docker.io/docker/sbx-kit-codex@sha256:d66cea23a0bea94c950e787beb6d7b1208c19b9dcc4f2ce937f89009b9427cc4
     buildArg: UPSTREAM_WORKLOAD
-capabilities: []
+capabilities:
+- type: com.docker.sandbox/volume@1
+  config:
+    path: /home/agent/.local/state/codex
+    size: 2g
+    tmpfs: false
+- type: com.docker.sandbox/lifecycle@1
+  config:
+    install:
+    - user: '0'
+      command: sh /usr/share/sandbox-kits/persist-codex-state.sh

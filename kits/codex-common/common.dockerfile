@@ -2,6 +2,7 @@ ARG UPSTREAM_WORKLOAD
 FROM ${UPSTREAM_WORKLOAD}
 ARG TARGETARCH
 USER root
+COPY persist-state.sh /usr/share/sandbox-kits/persist-codex-state.sh
 COPY packages.txt /usr/share/sandbox-kits/native-dependencies.requested
 COPY verify-packages.py /usr/share/sandbox-kits/verify-packages.py
 RUN set -eu; \
