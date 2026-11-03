@@ -12,8 +12,9 @@ RUN set -eu; \
     cp /var/lib/dpkg/status /usr/share/sandbox-kits/dpkg-status.before; \
     apt-get -o APT::Update::Error-Mode=any update; \
     printf 'Package: *\nPin: origin dhi.io\nPin-Priority: 1001\n' > /etc/apt/preferences.d/sandbox-native-dependencies; \
+    python3 /usr/share/sandbox-kits/verify-packages.py --pin-inherited; \
     xargs -r apt-get install -y --no-install-recommends --allow-downgrades --no-remove < /usr/share/sandbox-kits/native-dependencies.requested; \
-    rm /etc/apt/preferences.d/sandbox-native-dependencies; \
+    rm /etc/apt/preferences.d/sandbox-native-dependencies /etc/apt/preferences.d/sandbox-inherited-packages; \
     python3 /usr/share/sandbox-kits/verify-packages.py; \
     test -z "$(dpkg --audit)"; \
     xargs dpkg-query -W -f='${binary:Package}\t${Version}\t${Status}\n' < /usr/share/sandbox-kits/native-dependencies.requested > /usr/share/sandbox-kits/native-dependencies.installed; \

@@ -6,6 +6,7 @@ never allowed, including packages without a representable capability version.
 """
 from pathlib import Path
 import re
+import sys
 
 
 def installed(path):
@@ -26,8 +27,23 @@ def capability_version(version):
     return match[0] if match else ""
 
 
+def package_preferences(packages):
+    records = []
+    for name, version in packages.items():
+        if not capability_version(version):
+            continue
+        upstream = version.rsplit("-", 1)[0]
+        pattern = upstream + "-*" if "-" in version else version
+        records.append(f"Package: {name}\nPin: version {pattern}\nPin-Priority: 1002\n")
+        records.append(f"Package: {name}\nPin: version *\nPin-Priority: -1\n")
+    return "\n".join(records)
+
+
 if __name__ == "__main__":
     before = installed("/usr/share/sandbox-kits/dpkg-status.before")
+    if sys.argv[1:] == ["--pin-inherited"]:
+        Path("/etc/apt/preferences.d/sandbox-inherited-packages").write_text(package_preferences(before))
+        raise SystemExit(0)
     after = installed("/var/lib/dpkg/status")
     for name, version in before.items():
         if name not in after:
