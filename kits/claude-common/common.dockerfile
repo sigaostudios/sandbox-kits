@@ -10,7 +10,7 @@ RUN set -eu; \
     python3 --version; \
     cp /var/lib/dpkg/status /usr/share/sandbox-kits/dpkg-status.before; \
     apt-get -o APT::Update::Error-Mode=any update; \
-    xargs -r apt-get install -y --no-install-recommends --no-upgrade --no-remove < /usr/share/sandbox-kits/native-dependencies.requested; \
+    xargs -r apt-get install -y --no-install-recommends --no-remove < /usr/share/sandbox-kits/native-dependencies.requested; \
     python3 /usr/share/sandbox-kits/verify-packages.py; \
     test -z "$(dpkg --audit)"; \
     xargs dpkg-query -W -f='${binary:Package}\t${Version}\t${Status}\n' < /usr/share/sandbox-kits/native-dependencies.requested > /usr/share/sandbox-kits/native-dependencies.installed; \
