@@ -7,6 +7,7 @@ never allowed, including packages without a representable capability version.
 from pathlib import Path
 import re
 import sys
+import subprocess
 
 
 def installed(path):
@@ -27,22 +28,24 @@ def capability_version(version):
     return match[0] if match else ""
 
 
-def package_preferences(packages):
+def package_preferences(packages, available):
     records = []
-    for name, version in packages.items():
-        if not capability_version(version):
+    for line in available.splitlines():
+        fields = line.split("|")
+        if len(fields) < 2:
             continue
-        upstream = version.rsplit("-", 1)[0]
-        pattern = upstream + "-*" if "-" in version else version
-        records.append(f"Package: {name}\nPin: version {pattern}\nPin-Priority: 1002\n")
-        records.append(f"Package: {name}\nPin: version *\nPin-Priority: -1\n")
-    return "\n".join(records)
+        name, candidate = (field.strip() for field in fields[:2])
+        inherited = packages.get(name.split(":", 1)[0])
+        if inherited and capability_version(inherited) and capability_version(inherited) != capability_version(candidate):
+            records.append(f"Package: {name}\nPin: version {candidate}\nPin-Priority: -1\n")
+    return "\n".join(dict.fromkeys(records))
 
 
 if __name__ == "__main__":
     before = installed("/usr/share/sandbox-kits/dpkg-status.before")
     if sys.argv[1:] == ["--pin-inherited"]:
-        Path("/etc/apt/preferences.d/sandbox-inherited-packages").write_text(package_preferences(before))
+        available = subprocess.check_output(["apt-cache", "madison", *before], text=True)
+        Path("/etc/apt/preferences.d/sandbox-inherited-packages").write_text(package_preferences(before, available))
         raise SystemExit(0)
     after = installed("/var/lib/dpkg/status")
     for name, version in before.items():
