@@ -4,13 +4,16 @@ ARG TARGETARCH
 USER root
 COPY packages.txt /usr/share/sandbox-kits/native-dependencies.requested
 COPY verify-packages.py /usr/share/sandbox-kits/verify-packages.py
+# DHI rebuild suffixes can sort below installed revisions; verify inherited capabilities after alignment.
 RUN set -eu; \
     . /etc/os-release; \
     [ "$ID:$VERSION_ID:$TARGETARCH" = debian:13:amd64 ] || { echo 'This kit requires Debian 13 linux/amd64' >&2; exit 1; }; \
     python3 --version; \
     cp /var/lib/dpkg/status /usr/share/sandbox-kits/dpkg-status.before; \
     apt-get -o APT::Update::Error-Mode=any update; \
-    xargs -r apt-get install -y --no-install-recommends --no-remove < /usr/share/sandbox-kits/native-dependencies.requested; \
+    printf 'Package: *\nPin: origin dhi.io\nPin-Priority: 1001\n' > /etc/apt/preferences.d/sandbox-native-dependencies; \
+    xargs -r apt-get install -y --no-install-recommends --allow-downgrades --no-remove < /usr/share/sandbox-kits/native-dependencies.requested; \
+    rm /etc/apt/preferences.d/sandbox-native-dependencies; \
     python3 /usr/share/sandbox-kits/verify-packages.py; \
     test -z "$(dpkg --audit)"; \
     xargs dpkg-query -W -f='${binary:Package}\t${Version}\t${Status}\n' < /usr/share/sandbox-kits/native-dependencies.requested > /usr/share/sandbox-kits/native-dependencies.installed; \
